@@ -1,0 +1,96 @@
+# MadThinker Catch Reports Export — reference consumer
+
+A small, runnable example showing the **correct** way to integrate with the
+MadThinker Catch Reports Export API. Clone it, point it at your API key and
+endpoint URL, and it builds and maintains a local mirror of catch reports in a
+SQLite file.
+
+It is deliberately minimal (`requests` + the Python standard library) and is
+meant to read as the canonical integration: opaque cursor handling, idempotent
+upserts, tombstone deletes, and retry/backoff on transient errors.
+
+## How it works (pull model)
+
+You poll the export endpoint; it never pushes to you. Each call returns a page
+of rows and an **opaque cursor**. You save the cursor and pass it back on the
+next call to get only what changed since. The cursor — not a timestamp — is the
+source of truth for "where I am," so the mirror stays consistent across runs.
+
+The sync loop:
+
+1. Read the saved cursor from SQLite. None means this is the first run.
+2. First run calls with `since=1970-01-01T00:00:00Z`; every later call uses the
+   saved cursor (cursor wins over `since`).
+3. For each row: `deleted_at` null → upsert by `id`; otherwise delete by `id`
+   (tombstone).
+4. Save the returned `next_cursor`, replacing the previous one.
+5. If `has_more` is true, fetch the next page immediately; otherwise stop.
+
+## Setup
+
+Requires Python 3.10+.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e .
+```
+
+## Configure
+
+Two environment variables are required; they are **delivered out-of-band — keep
+the key secret and never commit it.**
+
+| Variable             | Purpose                                                                 |
+| -------------------- | ----------------------------------------------------------------------- |
+| `MT_EXPORT_API_URL`  | Export endpoint, e.g. `https://<project>.supabase.co/functions/v1/tca-catch-reports-export` |
+| `MT_EXPORT_API_KEY`  | The API key. Sent verbatim in the `x-tca-api-key` request header.       |
+
+Optional:
+
+| Variable            | Default             | Purpose                          |
+| ------------------- | ------------------- | -------------------------------- |
+| `MT_EXPORT_DB_PATH` | `catch_reports.db`  | Path to the local SQLite mirror. |
+| `MT_EXPORT_LIMIT`   | `1000`              | Page size (1–5000).              |
+
+```bash
+export MT_EXPORT_API_URL="https://<project>.supabase.co/functions/v1/tca-catch-reports-export"
+export MT_EXPORT_API_KEY="your-key-here"
+```
+
+## Run
+
+```bash
+python -m madthinker_export sync
+```
+
+This writes a SQLite file (`catch_reports.db` by default) containing a
+`catch_reports` table and a `sync_state` table holding the cursor. Run it again
+later and it resumes from the saved cursor, pulling only new and changed rows.
+
+Exit codes: `0` success, `1` runtime error (auth, bad request, or exhausted
+transient retries), `2` misconfiguration.
+
+## Errors and retries
+
+| Status | Meaning                          | Behavior                                   |
+| ------ | -------------------------------- | ------------------------------------------ |
+| 401    | Missing/wrong/revoked key        | Caller's fault. Clear message, exit, no retry. |
+| 400    | Invalid `cursor`/`since`/`limit` | Caller's fault. Clear message, exit, no retry. |
+| 429    | Rate limit (server allows 60/min)| Transient. Exponential backoff + jitter, retry. |
+| 5xx / connection error | Server / network         | Transient. Bounded retry (~4) with backoff, then exit nonzero with the last error. |
+
+## Develop and test
+
+The unit tests mock the HTTP boundary, so they run with **no API key and no
+network**:
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+ruff check .
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
