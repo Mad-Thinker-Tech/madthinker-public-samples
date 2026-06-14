@@ -219,3 +219,6 @@ __marimo__/
 
 # Local SQLite mirror databases
 *.db
+
+# Downloaded photos (created at runtime by the sync)
+photos/

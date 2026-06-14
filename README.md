@@ -9,6 +9,34 @@ It is deliberately minimal (`requests` + the Python standard library) and is
 meant to read as the canonical integration: opaque cursor handling, idempotent
 upserts, tombstone deletes, and retry/backoff on transient errors.
 
+## Quick start (Windows)
+
+If you just want to pull the data, this is the whole thing — three steps, no
+prior Python knowledge needed:
+
+1. **Get the code.** Download this repository as a ZIP from GitHub (green
+   **Code** button → **Download ZIP**) and unzip it, or clone it with git.
+2. **Run setup.** Open the unzipped folder, then from a command prompt in that
+   folder run:
+
+   ```
+   config.cmd
+   ```
+
+   It checks for Python (and tells you how to install it if it's missing), sets
+   everything up, and asks you to paste the API key we emailed you.
+3. **Run it.**
+
+   ```
+   run.cmd
+   ```
+
+   This pulls every catch report into `catch_reports.db` and saves photos into
+   the `photos` folder. Run `run.cmd` again any time to fetch what's changed.
+
+That's it. The rest of this README is reference detail and the manual,
+cross-platform equivalents of those two scripts.
+
 ## How it works (pull model)
 
 You poll the export endpoint; it never pushes to you. Each call returns a page
