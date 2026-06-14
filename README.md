@@ -27,9 +27,37 @@ The sync loop:
 4. Save the returned `next_cursor`, replacing the previous one.
 5. If `has_more` is true, fetch the next page immediately; otherwise stop.
 
+## Prerequisites
+
+The only thing you must install yourself is **Python**. Everything else is
+either bundled with Python or installed automatically in [Setup](#setup).
+
+| Dependency | Version | How to get it |
+| ---------- | ------- | ------------- |
+| **Python** | 3.10 or newer | Install if you don't have it (see below), then verify with `python --version`. |
+| **pip** and **venv** | bundled | Ship with Python 3.10+. On Debian/Ubuntu, install via `sudo apt install python3-venv python3-pip`. |
+| **SQLite** | bundled | **Nothing to install.** Python's standard library includes the `sqlite3` module and a built-in SQLite engine; the mirror file is created for you. |
+| **`requests`** | ≥ 2.28 | The one third-party library. Installed automatically by `pip install -e .` below. |
+| **git** | any | Only needed to clone the repo (or download the ZIP from GitHub instead). |
+
+Installing Python 3.10+:
+
+- **Windows:** download from <https://www.python.org/downloads/> and tick
+  **"Add python.exe to PATH"** in the installer, or run
+  `winget install Python.Python.3.12`.
+- **macOS:** `brew install python@3.12`, or the installer from python.org.
+- **Linux (Debian/Ubuntu):** `sudo apt install python3 python3-venv python3-pip`.
+
+Verify before continuing (must print 3.10 or higher):
+
+```bash
+python --version      # if that's not found, try: python3 --version
+```
+
 ## Setup
 
-Requires Python 3.10+.
+Create an isolated environment and install the package (this also pulls in
+`requests`):
 
 ```bash
 python -m venv .venv
