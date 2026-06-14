@@ -22,7 +22,8 @@ The sync loop:
 2. First run calls with `since=1970-01-01T00:00:00Z`; every later call uses the
    saved cursor (cursor wins over `since`).
 3. For each row: `deleted_at` null → upsert by `id`; otherwise delete by `id`
-   (tombstone).
+   (tombstone). When photo download is enabled, a live row's signed photo URLs
+   are fetched in this same iteration (see [Photos](#photos)).
 4. Save the returned `next_cursor`, replacing the previous one.
 5. If `has_more` is true, fetch the next page immediately; otherwise stop.
 
@@ -50,8 +51,9 @@ Optional:
 
 | Variable            | Default             | Purpose                          |
 | ------------------- | ------------------- | -------------------------------- |
-| `MT_EXPORT_DB_PATH` | `catch_reports.db`  | Path to the local SQLite mirror. |
-| `MT_EXPORT_LIMIT`   | `1000`              | Page size (1–5000).              |
+| `MT_EXPORT_DB_PATH`   | `catch_reports.db`  | Path to the local SQLite mirror. |
+| `MT_EXPORT_LIMIT`     | `1000`              | Page size (1–5000).              |
+| `MT_EXPORT_PHOTO_DIR` | _(unset)_           | Folder for downloaded photos. Unset → data only; set → download photos during sync. See [Photos](#photos). |
 
 ```bash
 export MT_EXPORT_API_URL="https://<project>.supabase.co/functions/v1/tca-catch-reports-export"
@@ -70,6 +72,34 @@ later and it resumes from the saved cursor, pulling only new and changed rows.
 
 Exit codes: `0` success, `1` runtime error (auth, bad request, or exhausted
 transient retries), `2` misconfiguration.
+
+## Photos
+
+Each row may carry two **signed** photo URLs (`photo_url`, `head_photo_url`)
+that expire **one hour** after the response. To also mirror the images, point
+`MT_EXPORT_PHOTO_DIR` at a folder:
+
+```bash
+export MT_EXPORT_PHOTO_DIR="./photos"
+python -m madthinker_export sync
+```
+
+The same `sync` run then downloads each live row's photos **in the same
+iteration that produced the URLs**, before they expire, writing
+`<id>.jpg` and `<id>.head.jpg` (extension derived from the URL). The mirror
+records, per row:
+
+- `photo_urls_expire_at` — when the signed URLs were valid until,
+- `photo_path` / `head_photo_path` — the local files, or `NULL` if the row had
+  no photo or the download was skipped.
+
+The raw signed URLs are **not** stored — they expire, so a saved URL would be
+misleading; the local paths are the durable reference.
+
+Download is **best-effort**: a single failed image fetch (e.g. an already-expired
+URL) prints a warning and the sync continues. Because a row only reappears in the
+feed when it changes, an image missed this way is re-fetched the next time that
+row is exported. Leave `MT_EXPORT_PHOTO_DIR` unset for data-only syncs.
 
 ## Errors and retries
 

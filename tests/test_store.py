@@ -86,3 +86,33 @@ def test_delete_missing_row_is_noop(tmp_path):
     store = Store(tmp_path / "mirror.db")
     store.delete_row("does-not-exist")
     assert store.count_rows() == 0
+
+
+def test_upsert_records_photo_metadata(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(
+        _row("r1", photo_urls_expire_at="2024-01-01T01:00:00Z"),
+        photo_path="/photos/r1.jpg",
+        head_photo_path="/photos/r1.head.jpg",
+    )
+    got = store.get_row("r1")
+    assert got["photo_urls_expire_at"] == "2024-01-01T01:00:00Z"
+    assert got["photo_path"] == "/photos/r1.jpg"
+    assert got["head_photo_path"] == "/photos/r1.head.jpg"
+
+
+def test_upsert_without_photos_leaves_paths_null(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(_row("r1"))
+    got = store.get_row("r1")
+    assert got["photo_path"] is None
+    assert got["head_photo_path"] is None
+    assert got["photo_urls_expire_at"] is None
+
+
+def test_reupsert_refreshes_photo_paths(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(_row("r1"), photo_path="/photos/old.jpg")
+    store.upsert_row(_row("r1"), photo_path="/photos/new.jpg")
+    assert store.get_row("r1")["photo_path"] == "/photos/new.jpg"
+    assert store.count_rows() == 1

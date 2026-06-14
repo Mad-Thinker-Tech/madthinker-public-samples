@@ -61,3 +61,19 @@ def test_server_error_exhaustion_returns_nonzero(tmp_path):
     session = FakeSession([FakeResponse(500, {"error": "Internal server error"})] * 10)
     code = main(["sync"], env=env_for(tmp_path), session=session, sleep=NO_SLEEP)
     assert code != 0
+
+
+def test_sync_downloads_photos_when_dir_configured(tmp_path, capsys):
+    photo_url = "https://signed.example/r1.jpg?t=1"
+    photo_dir = tmp_path / "pics"
+    env = env_for(tmp_path, MT_EXPORT_PHOTO_DIR=str(photo_dir))
+    rows = [{"id": "r1", "deleted_at": None, "photo_url": photo_url, "head_photo_url": None}]
+    session = FakeSession(
+        [one_page(rows)], photos={photo_url: FakeResponse(200, content=b"IMG")}
+    )
+
+    code = main(["sync"], env=env, session=session, sleep=NO_SLEEP)
+
+    assert code == 0
+    assert (photo_dir / "r1.jpg").read_bytes() == b"IMG"
+    assert "1 photo" in capsys.readouterr().out  # reported in the summary

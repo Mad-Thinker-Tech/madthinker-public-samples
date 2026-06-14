@@ -5,10 +5,11 @@ Two variables are required and delivered out-of-band:
 * ``MT_EXPORT_API_URL`` — the export endpoint URL.
 * ``MT_EXPORT_API_KEY`` — the API key sent in the ``x-tca-api-key`` header.
 
-Two are optional:
+Three are optional:
 
-* ``MT_EXPORT_DB_PATH`` — local SQLite mirror path (default ``catch_reports.db``).
-* ``MT_EXPORT_LIMIT``   — page size, 1..5000 (default 1000).
+* ``MT_EXPORT_DB_PATH``  — local SQLite mirror path (default ``catch_reports.db``).
+* ``MT_EXPORT_LIMIT``    — page size, 1..5000 (default 1000).
+* ``MT_EXPORT_PHOTO_DIR``— folder for downloaded photos. Unset means data only.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ class Config:
     api_key: str
     db_path: str = DEFAULT_DB_PATH
     limit: int = DEFAULT_LIMIT
+    photo_dir: str | None = None
 
     @classmethod
     def from_env(cls, env: dict | None = None) -> Config:
@@ -67,4 +69,12 @@ class Config:
                     f"MT_EXPORT_LIMIT must be between 1 and {MAX_LIMIT}, got {limit}"
                 )
 
-        return cls(api_url=api_url, api_key=api_key, db_path=db_path, limit=limit)
+        photo_dir = env.get("MT_EXPORT_PHOTO_DIR") or None
+
+        return cls(
+            api_url=api_url,
+            api_key=api_key,
+            db_path=db_path,
+            limit=limit,
+            photo_dir=photo_dir,
+        )

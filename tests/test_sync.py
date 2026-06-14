@@ -4,6 +4,8 @@ These drive the real client and real SQLite store, mocking only the HTTP
 transport, so they exercise the full sync behaviour end to end.
 """
 
+from pathlib import Path
+
 from madthinker_export.client import ExportClient
 from madthinker_export.store import Store
 from madthinker_export.sync import EPOCH, sync
@@ -117,3 +119,58 @@ def test_upsert_is_idempotent_across_runs(tmp_path):
 
     assert store2.count_rows() == 1
     assert store2.get_row("r1")["species"] == "coho"
+
+
+def test_no_photo_download_when_photo_dir_unset(tmp_path):
+    photo_url = "https://signed.example/r1.jpg?t=1"
+    rows = [live("r1", photo_url=photo_url, head_photo_url=None)]
+    session = FakeSession(
+        [page(rows, "c1", False)],
+        photos={photo_url: FakeResponse(200, content=b"IMG")},
+    )
+    client = ExportClient(URL, KEY, session=session, sleep=lambda _s: None)
+    store = Store(tmp_path / "m.db")
+
+    result = sync(client, store)  # no photo_dir
+
+    assert store.get_row("r1")["photo_path"] is None
+    assert result.photos == 0
+    # the signed URL was never fetched
+    assert all(call["url"] != photo_url for call in session.calls)
+
+
+def test_downloads_photos_when_photo_dir_set(tmp_path):
+    photo_url = "https://signed.example/r1.jpg?t=1"
+    rows = [
+        live(
+            "r1",
+            photo_url=photo_url,
+            head_photo_url=None,
+            photo_urls_expire_at="2024-01-01T01:00:00Z",
+        )
+    ]
+    session = FakeSession(
+        [page(rows, "c1", False)],
+        photos={photo_url: FakeResponse(200, content=b"IMG")},
+    )
+    client = ExportClient(URL, KEY, session=session, sleep=lambda _s: None)
+    store = Store(tmp_path / "m.db")
+
+    result = sync(client, store, photo_dir=tmp_path / "pics")
+
+    saved = store.get_row("r1")
+    assert Path(saved["photo_path"]).read_bytes() == b"IMG"
+    assert saved["head_photo_path"] is None
+    assert saved["photo_urls_expire_at"] == "2024-01-01T01:00:00Z"
+    assert result.photos == 1
+
+
+def test_tombstoned_rows_skip_photo_download(tmp_path):
+    session = FakeSession([page([tombstone("r1")], "c1", False)])
+    client = ExportClient(URL, KEY, session=session, sleep=lambda _s: None)
+    store = Store(tmp_path / "m.db")
+
+    result = sync(client, store, photo_dir=tmp_path / "pics")
+
+    assert result.deletes == 1
+    assert result.photos == 0

@@ -67,16 +67,19 @@ def _run_sync(config: Config, *, session, sleep: Callable[[float], None]) -> int
     )
     store = Store(config.db_path)
     try:
-        result = sync(client, store)
+        result = sync(client, store, photo_dir=config.photo_dir)
     except ExportError as exc:
         print(f"Sync failed: {exc}")
         return EXIT_RUNTIME_ERROR
     finally:
         store.close()
 
+    photos = ""
+    if config.photo_dir:
+        photos = f" {result.photos} photo(s) saved to {config.photo_dir}."
     print(
         f"Sync complete: {result.pages} page(s), "
-        f"{result.upserts} upserted, {result.deletes} deleted. "
+        f"{result.upserts} upserted, {result.deletes} deleted.{photos} "
         f"Mirror at {config.db_path}."
     )
     return EXIT_OK

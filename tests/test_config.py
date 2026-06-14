@@ -56,3 +56,16 @@ def test_non_integer_limit_raises():
 def test_out_of_range_limit_raises():
     with pytest.raises(ConfigError):
         Config.from_env(base_env(MT_EXPORT_LIMIT="9999"))
+
+
+def test_default_photo_dir_is_none():
+    assert Config.from_env(base_env()).photo_dir is None
+
+
+def test_custom_photo_dir():
+    cfg = Config.from_env(base_env(MT_EXPORT_PHOTO_DIR="/tmp/pics"))
+    assert cfg.photo_dir == "/tmp/pics"
+
+
+def test_blank_photo_dir_is_none():
+    assert Config.from_env(base_env(MT_EXPORT_PHOTO_DIR="")).photo_dir is None
