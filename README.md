@@ -43,8 +43,31 @@ showdata.cmd
 It prints a summary of the catch reports in your local database (no API key
 needed — it only reads the file `run.cmd` created).
 
-That's it. The rest of this README is reference detail and the manual,
-cross-platform equivalents of those scripts.
+## Quick start (macOS / Linux)
+
+The same three steps, using the shell scripts instead of the `.cmd` files:
+
+1. **Get the code** — download and unzip the repo, or clone it.
+2. **Run setup** from a Terminal in that folder:
+
+   ```bash
+   ./config.sh
+   ```
+
+   It checks for Python (telling you how to install it if missing), sets
+   everything up, and asks you to paste the API key we emailed you.
+3. **Run it**, then browse what you pulled:
+
+   ```bash
+   ./run.sh
+   ./showdata.sh
+   ```
+
+If a script won't start, mark them executable once with
+`chmod +x config.sh run.sh showdata.sh`.
+
+That's it. The rest of this README is reference detail and the manual commands
+the scripts wrap.
 
 ## Documentation
 
