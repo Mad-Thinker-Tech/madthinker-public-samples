@@ -37,6 +37,20 @@ prior Python knowledge needed:
 That's it. The rest of this README is reference detail and the manual,
 cross-platform equivalents of those two scripts.
 
+## Documentation
+
+Deeper references live in [`docs/`](docs/):
+
+- [**Catch Reports Export API**](docs/TCA_Catch_Reports_Export_API.md) —
+  consumer-facing overview of the pull model: endpoint, query parameters, and
+  response shape. Start here for the big picture.
+- [**SDK / API Reference**](docs/TCA_Export_SDK_API_Reference.md) — the stable,
+  language-agnostic endpoint contract this sample implements (headers,
+  parameters, errors, paging).
+- [**Client Database Import Guide**](docs/TCA_Export_Client_DB_Import_Guide.md) —
+  how to mirror the feed into your own Postgres/Supabase database, including a
+  target schema and the import-job loop.
+
 ## How it works (pull model)
 
 You poll the export endpoint; it never pushes to you. Each call returns a page
