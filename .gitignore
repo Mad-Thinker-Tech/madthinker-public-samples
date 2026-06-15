@@ -222,5 +222,8 @@ __marimo__/
 
 # Downloaded photos (created at runtime by the sync)
 photos/
+
+# Local secrets — holds your private API key; never commit this
+config.env.local
 .claude/*
 docs/superpowers/*
