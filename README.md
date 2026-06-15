@@ -34,8 +34,17 @@ prior Python knowledge needed:
    This pulls every catch report into `catch_reports.db` and saves photos into
    the `photos` folder. Run `run.cmd` again any time to fetch what's changed.
 
+To browse what you've pulled at any time, run:
+
+```
+showdata.cmd
+```
+
+It prints a summary of the catch reports in your local database (no API key
+needed — it only reads the file `run.cmd` created).
+
 That's it. The rest of this README is reference detail and the manual,
-cross-platform equivalents of those two scripts.
+cross-platform equivalents of those scripts.
 
 ## Documentation
 
@@ -139,6 +148,13 @@ python -m madthinker_export sync
 This writes a SQLite file (`catch_reports.db` by default) containing a
 `catch_reports` table and a `sync_state` table holding the cursor. Run it again
 later and it resumes from the saved cursor, pulling only new and changed rows.
+
+To print the catch reports already in the mirror (the cross-platform equivalent
+of `showdata.cmd`):
+
+```bash
+python -m madthinker_export show
+```
 
 Exit codes: `0` success, `1` runtime error (auth, bad request, or exhausted
 transient retries), `2` misconfiguration.

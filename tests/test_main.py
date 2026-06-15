@@ -1,5 +1,7 @@
 """Tests for the command-line entry point and its exit codes."""
 
+import os
+
 from madthinker_export.__main__ import main
 from madthinker_export.store import Store
 from tests.conftest import FakeResponse, FakeSession
@@ -61,6 +63,55 @@ def test_server_error_exhaustion_returns_nonzero(tmp_path):
     session = FakeSession([FakeResponse(500, {"error": "Internal server error"})] * 10)
     code = main(["sync"], env=env_for(tmp_path), session=session, sleep=NO_SLEEP)
     assert code != 0
+
+
+def test_show_lists_reports(tmp_path, capsys):
+    db = str(tmp_path / "m.db")
+    store = Store(db)
+    store.upsert_row(
+        {
+            "id": "r1",
+            "species": "chinook",
+            "river": "Deschutes",
+            "length_inches": 30.5,
+            "caught_at": "2024-05-01T12:00:00Z",
+            "deleted_at": None,
+        }
+    )
+    store.close()
+
+    code = main(["show"], env={"MT_EXPORT_DB_PATH": db})
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "chinook" in out
+    assert "Deschutes" in out
+    assert "1" in out  # the count
+
+
+def test_show_no_database_is_friendly_and_creates_nothing(tmp_path, capsys):
+    db = str(tmp_path / "missing.db")
+    code = main(["show"], env={"MT_EXPORT_DB_PATH": db})
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "run" in out.lower()  # tells them to sync first
+    assert not os.path.exists(db)  # show must not create an empty db
+
+
+def test_show_empty_database(tmp_path, capsys):
+    db = str(tmp_path / "empty.db")
+    Store(db).close()  # creates schema, no rows
+    code = main(["show"], env={"MT_EXPORT_DB_PATH": db})
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "no catch reports" in out.lower()
+
+
+def test_show_needs_no_api_key(tmp_path):
+    # show works with only a db path — no URL/key configured
+    db = str(tmp_path / "m.db")
+    Store(db).close()
+    assert main(["show"], env={"MT_EXPORT_DB_PATH": db}) == 0
 
 
 def test_sync_downloads_photos_when_dir_configured(tmp_path, capsys):

@@ -116,3 +116,17 @@ def test_reupsert_refreshes_photo_paths(tmp_path):
     store.upsert_row(_row("r1"), photo_path="/photos/new.jpg")
     assert store.get_row("r1")["photo_path"] == "/photos/new.jpg"
     assert store.count_rows() == 1
+
+
+def test_recent_rows_most_recent_first_and_capped(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(_row("r1", caught_at="2024-01-01T00:00:00Z"))
+    store.upsert_row(_row("r2", caught_at="2024-03-01T00:00:00Z"))
+    store.upsert_row(_row("r3", caught_at="2024-02-01T00:00:00Z"))
+    rows = store.recent_rows(limit=2)
+    assert [r["id"] for r in rows] == ["r2", "r3"]
+
+
+def test_recent_rows_empty_store(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    assert store.recent_rows(limit=10) == []

@@ -139,5 +139,13 @@ class Store:
     def count_rows(self) -> int:
         return self._conn.execute("SELECT COUNT(*) FROM catch_reports").fetchone()[0]
 
+    def recent_rows(self, limit: int = 20) -> list[dict]:
+        """Return up to ``limit`` rows, most recently caught first."""
+        rows = self._conn.execute(
+            "SELECT * FROM catch_reports ORDER BY caught_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def close(self) -> None:
         self._conn.close()
