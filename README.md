@@ -114,7 +114,7 @@ the key secret and never commit it.**
 
 | Variable             | Purpose                                                                 |
 | -------------------- | ----------------------------------------------------------------------- |
-| `MT_EXPORT_API_URL`  | Export endpoint, e.g. `https://<project>.supabase.co/functions/v1/tca-catch-reports-export` |
+| `MT_EXPORT_API_URL`  | Export endpoint, e.g. `https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export` |
 | `MT_EXPORT_API_KEY`  | The API key. Sent verbatim in the `x-tca-api-key` request header.       |
 
 Optional:
@@ -126,7 +126,7 @@ Optional:
 | `MT_EXPORT_PHOTO_DIR` | _(unset)_           | Folder for downloaded photos. Unset → data only; set → download photos during sync. See [Photos](#photos). |
 
 ```bash
-export MT_EXPORT_API_URL="https://<project>.supabase.co/functions/v1/tca-catch-reports-export"
+export MT_EXPORT_API_URL="https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export"
 export MT_EXPORT_API_KEY="your-key-here"
 ```
 

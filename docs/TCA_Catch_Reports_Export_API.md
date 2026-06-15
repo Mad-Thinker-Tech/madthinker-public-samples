@@ -28,7 +28,7 @@ Both will be delivered through a secure channel.
 ## Endpoint
 
 ```
-GET https://koyegehcwcrvxpfthkxq.supabase.co/functions/v1/tca-catch-reports-export
+GET https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export
 ```
 
 ### Required headers
@@ -120,7 +120,7 @@ import time
 import sqlite3
 import requests
 
-API_URL = "https://koyegehcwcrvxpfthkxq.supabase.co/functions/v1/tca-catch-reports-export"
+API_URL = "https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export"
 API_KEY = os.environ["TCA_API_KEY"]  # set this in your environment
 
 # Local store for the cursor and the data. Replace with your Supabase logic.
@@ -228,7 +228,7 @@ Before writing any code, verify your API key works:
 
 ```bash
 curl -H "x-tca-api-key: YOUR_KEY_HERE" \
-  "https://koyegehcwcrvxpfthkxq.supabase.co/functions/v1/tca-catch-reports-export?since=1970-01-01T00:00:00Z&limit=10"
+  "https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export?since=1970-01-01T00:00:00Z&limit=10"
 ```
 
 You should get back JSON with up to 10 rows.

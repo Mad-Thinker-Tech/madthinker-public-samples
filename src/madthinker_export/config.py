@@ -42,7 +42,7 @@ class Config:
         if not api_url:
             raise ConfigError(
                 "MT_EXPORT_API_URL is not set. Point it at the export endpoint, e.g. "
-                "https://<project>.supabase.co/functions/v1/tca-catch-reports-export"
+                "https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export"
             )
 
         api_key = env.get("MT_EXPORT_API_KEY")
