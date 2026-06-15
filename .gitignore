@@ -222,3 +222,5 @@ __marimo__/
 
 # Downloaded photos (created at runtime by the sync)
 photos/
+.claude/*
+docs/superpowers/*

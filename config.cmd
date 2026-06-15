@@ -47,16 +47,27 @@ echo [..] Installing dependencies ^(this can take a minute the first time^) ...
 if errorlevel 1 ( echo [X] Dependency install failed. Run:  "%VENVPY%" -m pip install -e . & exit /b 1 )
 echo [OK] Dependencies installed.
 
-REM --- 4. Make sure config.env exists -----------------------------------
+REM --- 4. Make sure config files exist ----------------------------------
 if not exist "config.env" (
   echo [X] config.env is missing from this folder.
   exit /b 1
 )
 
+REM config.env.local holds your private key and is not tracked by git.
+REM Recreate it from a template if this is a fresh clone.
+if not exist "config.env.local" (
+  echo [..] Creating config.env.local for your private API key ...
+  (
+    echo # Local secrets - NOT tracked by git. Holds your private API key.
+    echo # config.cmd fills this in for you, or paste your key after the = sign.
+    echo MT_EXPORT_API_KEY=tca_live_PASTE_YOUR_KEY_HERE
+  )> "config.env.local"
+)
+
 REM --- 5. Offer to store the API key -----------------------------------
-findstr /c:"tca_live_PASTE_YOUR_KEY_HERE" config.env >nul
+findstr /c:"tca_live_PASTE_YOUR_KEY_HERE" config.env.local >nul
 if errorlevel 1 (
-  echo [OK] An API key is already set in config.env.
+  echo [OK] An API key is already set in config.env.local.
   echo.
   echo Setup complete. Now run:  run.cmd
   exit /b 0
@@ -69,15 +80,15 @@ set /p "USERKEY=Paste the API key and press Enter (or just Enter to do it later)
 
 if not defined USERKEY (
   echo.
-  echo No key entered. Open config.env, paste your key after
+  echo No key entered. Open config.env.local, paste your key after
   echo   MT_EXPORT_API_KEY=
   echo then run:  run.cmd
   exit /b 0
 )
 
-"%VENVPY%" -c "import re,sys; p='config.env'; s=open(p,encoding='utf-8').read(); s=re.sub(r'(?m)^MT_EXPORT_API_KEY=.*$', 'MT_EXPORT_API_KEY='+sys.argv[1].strip(), s); open(p,'w',encoding='utf-8').write(s)" "%USERKEY%"
-if errorlevel 1 ( echo [X] Could not write the key to config.env. Please edit it by hand. & exit /b 1 )
-echo [OK] API key saved to config.env.
+"%VENVPY%" -c "import re,sys; p='config.env.local'; s=open(p,encoding='utf-8').read(); s=re.sub(r'(?m)^MT_EXPORT_API_KEY=.*$', 'MT_EXPORT_API_KEY='+sys.argv[1].strip(), s); open(p,'w',encoding='utf-8').write(s)" "%USERKEY%"
+if errorlevel 1 ( echo [X] Could not write the key to config.env.local. Please edit it by hand. & exit /b 1 )
+echo [OK] API key saved to config.env.local.
 echo.
 echo Setup complete. Now run:  run.cmd
 exit /b 0
