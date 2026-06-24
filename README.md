@@ -182,6 +182,33 @@ python -m madthinker_export show
 Exit codes: `0` success, `1` runtime error (auth, bad request, or exhausted
 transient retries), `2` misconfiguration.
 
+## Troubleshooting the connection
+
+If a call fails — especially with a **404 Not Found** — the cause is almost
+always a wrong `MT_EXPORT_API_URL`, not the key. Run the probe to find out for
+certain:
+
+```bash
+python -m madthinker_export probe
+```
+
+It runs two checks against the configured URL:
+
+1. **Static** — compares your URL to the canonical endpoint and points out any
+   host/path mismatch. Needs no key and no network.
+2. **Live** — one request, with the status code localising the fault:
+
+   | Result                | Meaning                                             |
+   | --------------------- | --------------------------------------------------- |
+   | `URL WRONG` (404)     | No function at this URL — fix `MT_EXPORT_API_URL`.   |
+   | `URL RIGHT, KEY WRONG` (401) | Endpoint reached; key missing or invalid.    |
+   | `URL RIGHT` (400)     | Endpoint reached; check the request parameters.     |
+   | `FULLY VALIDATED` (200) | URL and key both good, response contract matches. |
+
+The probe works even without `MT_EXPORT_API_KEY` set: a correct URL returns
+`401` and a wrong URL returns `404`, so the result still tells you whether the
+URL is right. Exit codes match the table — `0` only when fully validated.
+
 ## Photos
 
 Each row may carry two **signed** photo URLs (`photo_url`, `head_photo_url`)
