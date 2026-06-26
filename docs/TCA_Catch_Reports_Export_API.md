@@ -90,16 +90,18 @@ You will pass `since` only on the very first call ever. After that, you always p
 
 ### Field notes
 
+For the **complete field list** — every row field with its type, nullability,
+and meaning (including `girth_inches`, `scale_envelope_id`, and
+`fin_envelope_id`) — see the source of truth:
+**[TCA_Export_Reference.md — The exported table](TCA_Export_Reference.md#the-exported-table--every-field).**
+
+A few envelope/behavior notes specific to this walkthrough:
+
 - **`id`**: Unique ID for the catch report on Mad Thinker's side. Use this as your primary key on your end.
-- **`updated_at`**: When the row was last changed on Mad Thinker's side. Use this for your own auditing if needed.
 - **`deleted_at`**: If populated, this row was deleted on Mad Thinker's side. You should delete it (or mark it deleted) in your database. If `null`, the row is live.
 - **`has_more`**: If `true`, there are more rows waiting. Call again immediately with the new `cursor` (no need to wait for your next scheduled run).
 - **`next_cursor`**: Pass this back on your next call. Always.
-- **`photo_url`** / **`head_photo_url`**: Time-limited signed download URLs for the catch photo and the head photo. Either may be `null` if no photo was uploaded. **These expire 1 hour after the response is generated** — download the image bytes in the same loop iteration in which you pull the row. The URL is signed for access only; the image itself is unmodified.
-- **`photo_urls_expire_at`**: ISO 8601 timestamp at which both photo URLs above stop working. `null` when the row has no photos. After expiry, re-pull the row (same `since`/`cursor`) to get fresh URLs.
-- **`fork_length_inches`** / **`girth_inches`**: Manually entered fork length and final confirmed girth. Either may be `null` when not measured.
-- **`marks`** / **`hatchery`**: Researcher booleans. Never `null` — they default to `false`.
-- **`scale_envelope_id`** / **`fin_envelope_id`**: Scanned barcodes of the scale and fin sample envelopes. `null` when no sample was taken.
+- **`photo_url`** / **`head_photo_url`**: Time-limited signed URLs that **expire 1 hour after the response** — download the image bytes in the same loop iteration in which you pull the row, then store the file path (never the URL).
 
 ---
 
@@ -122,6 +124,10 @@ This is the entire integration. Run this on a schedule (cron, supabase scheduled
 ## Sample code (Python)
 
 This is a complete working example. Drop your API key in, run it, and it will pull all catch reports into a local SQLite file. Adapt it to write to your Supabase instance.
+
+> The table below mirrors the exported row shape. If the fields ever look out of
+> date, [TCA_Export_Reference.md](TCA_Export_Reference.md#the-exported-table--every-field)
+> is the source of truth — reconcile against it.
 
 ```python
 import os

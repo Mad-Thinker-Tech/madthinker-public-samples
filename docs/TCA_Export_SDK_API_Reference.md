@@ -120,33 +120,13 @@ every call after that.
 
 ### Row fields (25)
 
-| Field                  | Type             | Notes                                                                                  |
-| ---------------------- | ---------------- | -------------------------------------------------------------------------------------- |
-| `id`                   | string (uuid)    | MadThinker's unique id for the catch report. **Use as your primary key.**               |
-| `report_id`            | string (uuid)    | Client-supplied report id (idempotency key on upload).                                  |
-| `angler_member_id`     | string \| null   | The angler's member number.                                                             |
-| `species`              | string           | e.g. `Steelhead`, `Atlantic Salmon`.                                                    |
-| `length_inches`        | number \| null   |                                                                                        |
-| `fork_length_inches`   | number \| null   | Manually entered fork length. `null` = not measured.                                    |
-| `girth_inches`         | number \| null   | Final confirmed girth.                                                                  |
-| `river`                | string \| null   |                                                                                        |
-| `latitude`             | number \| null   |                                                                                        |
-| `longitude`            | number \| null   |                                                                                        |
-| `sex`                  | string \| null   |                                                                                        |
-| `lifecycle_stage`      | string \| null   |                                                                                        |
-| `marks`                | boolean          | Researcher flag; never null (defaults `false`).                                         |
-| `hatchery`             | boolean          | Researcher flag; never null (defaults `false`).                                         |
-| `floy_id`              | string \| null   | Physical Floy tag id.                                                                   |
-| `pit_id`               | string \| null   | Physical PIT tag id.                                                                    |
-| `scale_envelope_id`    | string \| null   | Scanned barcode of the scale sample envelope.                                           |
-| `fin_envelope_id`      | string \| null   | Scanned barcode of the fin sample envelope.                                             |
-| `caught_at`            | string (ISO8601) | When the fish was caught.                                                               |
-| `uploaded_at`          | string (ISO8601) | When the report reached MadThinker.                                                     |
-| `updated_at`           | string (ISO8601) | Last change on MadThinker's side. Drives the cursor ordering.                           |
-| `deleted_at`           | string \| null   | If set, the row was deleted upstream - delete/soft-delete it on your side. See below.   |
-| `photo_url`            | string \| null   | **Time-limited** signed download URL for the catch photo. `null` if no photo.           |
-| `head_photo_url`       | string \| null   | **Time-limited** signed download URL for the head photo. `null` if none.                |
-| `photo_urls_expire_at` | string \| null   | When both photo URLs stop working (about 1 hour after the response). `null` if no photo.|
+The complete field list — names, types, nullability, and meaning (including
+`fork_length_inches`, `girth_inches`, `marks`, `hatchery`, `scale_envelope_id`,
+and `fin_envelope_id`) — lives in one place, the source of truth:
+
+➡️ **[TCA_Export_Reference.md — The exported table](TCA_Export_Reference.md#the-exported-table--every-field).**
+
+The sample response above shows the shape; that page defines every field.
 
 ---
 

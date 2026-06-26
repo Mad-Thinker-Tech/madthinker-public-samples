@@ -30,45 +30,12 @@ You need three things in your database:
 
 ## 1. Target schema (Postgres / Supabase)
 
+The `catch_reports` column definitions are the source of truth in
+**[TCA_Export_Reference.md — Paste-ready mirror schema](TCA_Export_Reference.md#paste-ready-mirror-schema)**,
+which has a ready-to-run Postgres `catch_reports` table (and a SQLite variant).
+Create that table, then add the two helpers this guide uses:
+
 ```sql
--- Mirror of MadThinker catch reports. id is MadThinker's id; it is your PK.
-create table if not exists catch_reports (
-  id                  uuid primary key,
-  report_id           uuid,
-  angler_member_id    text,
-  species             text,
-  length_inches       numeric,
-  fork_length_inches  numeric,            -- manually entered fork length
-  girth_inches        double precision,   -- final confirmed girth
-  river               text,
-  latitude            double precision,
-  longitude           double precision,
-  sex                 text,
-  lifecycle_stage     text,
-  marks               boolean,            -- researcher flag (never null upstream)
-  hatchery            boolean,            -- researcher flag (never null upstream)
-  floy_id             text,
-  pit_id              text,
-  scale_envelope_id   text,               -- scale sample envelope barcode
-  fin_envelope_id     text,               -- fin sample envelope barcode
-  caught_at           timestamptz,
-  uploaded_at         timestamptz,
-  updated_at          timestamptz,
-  deleted_at          timestamptz,        -- non-null = deleted upstream
-  -- Local bookkeeping (not from the API):
-  imported_at         timestamptz not null default now()
-);
-
--- Optional: if you download photos, record where YOU stored them. Never store
--- the API's signed photo_url as the source of truth - it expires in ~1 hour.
-create table if not exists catch_report_photos (
-  catch_report_id uuid references catch_reports(id) on delete cascade,
-  kind            text check (kind in ('body','head')),
-  storage_path    text,                   -- path in YOUR storage
-  downloaded_at   timestamptz not null default now(),
-  primary key (catch_report_id, kind)
-);
-
 -- Single-row cursor store for incremental sync.
 create table if not exists sync_state (
   key   text primary key,
@@ -76,13 +43,31 @@ create table if not exists sync_state (
 );
 ```
 
-A quick local/sample variant uses SQLite with the same columns (see the SDK's
-own sample, which mirrors into a local `.db` file).
+This guide differs from the canonical schema in two optional ways, if you prefer:
+
+- Add a local `imported_at timestamptz not null default now()` bookkeeping
+  column to `catch_reports`.
+- Model photos as a **separate table** instead of the inline `photo_path` /
+  `head_photo_path` columns. Either way, never store the API's signed
+  `photo_url` — it expires in ~1 hour.
+
+```sql
+-- Optional alternative to inline photo path columns.
+create table if not exists catch_report_photos (
+  catch_report_id uuid references catch_reports(id) on delete cascade,
+  kind            text check (kind in ('body','head')),
+  storage_path    text,                   -- path in YOUR storage
+  downloaded_at   timestamptz not null default now(),
+  primary key (catch_report_id, kind)
+);
+```
 
 ---
 
 ## 2. Upsert and delete
 
+The column lists below must match your schema; if they ever drift, reconcile
+against [TCA_Export_Reference.md](TCA_Export_Reference.md#the-exported-table--every-field).
 For each row in a page:
 
 ```sql

@@ -73,15 +73,19 @@ the scripts wrap.
 
 Deeper references live in [`docs/`](docs/):
 
-- [**Catch Reports Export API**](docs/TCA_Catch_Reports_Export_API.md) —
-  consumer-facing overview of the pull model: endpoint, query parameters, and
-  response shape. Start here for the big picture.
+- [**Export Reference**](docs/TCA_Export_Reference.md) — **start here.** How the
+  API works in one page, the complete exported-table schema (every field,
+  including girth/scale/fin), and paste-ready Postgres + SQLite DDL. The single
+  source of truth for the field list.
 - [**SDK / API Reference**](docs/TCA_Export_SDK_API_Reference.md) — the stable,
   language-agnostic endpoint contract this sample implements (headers,
   parameters, errors, paging).
+- [**Catch Reports Export API**](docs/TCA_Catch_Reports_Export_API.md) —
+  a narrated walkthrough of the pull model with a complete, runnable Python
+  example.
 - [**Client Database Import Guide**](docs/TCA_Export_Client_DB_Import_Guide.md) —
-  how to mirror the feed into your own Postgres/Supabase database, including a
-  target schema and the import-job loop.
+  how to mirror the feed into your own Postgres/Supabase database, including the
+  cursor table and the import-job loop.
 
 ## How it works (pull model)
 
