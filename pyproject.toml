@@ -21,7 +21,10 @@ madthinker-export = "madthinker_export.__main__:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+# "src" makes madthinker_export importable; "." puts the repo root on the path
+# so `from tests.conftest import ...` resolves under a bare `pytest` invocation
+# (not just `python -m pytest`, which prepends the cwd itself).
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.ruff]
