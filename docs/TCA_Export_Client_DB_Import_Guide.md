@@ -30,39 +30,12 @@ You need three things in your database:
 
 ## 1. Target schema (Postgres / Supabase)
 
+The `catch_reports` column definitions are the source of truth in
+**[TCA_Export_Reference.md — Paste-ready mirror schema](TCA_Export_Reference.md#paste-ready-mirror-schema)**,
+which has a ready-to-run Postgres `catch_reports` table (and a SQLite variant).
+Create that table, then add the two helpers this guide uses:
+
 ```sql
--- Mirror of MadThinker catch reports. id is MadThinker's id; it is your PK.
-create table if not exists catch_reports (
-  id                  uuid primary key,
-  report_id           uuid,
-  angler_member_id    text,
-  species             text,
-  length_inches       numeric,
-  river               text,
-  latitude            double precision,
-  longitude           double precision,
-  sex                 text,
-  lifecycle_stage     text,
-  floy_id             text,
-  pit_id              text,
-  caught_at           timestamptz,
-  uploaded_at         timestamptz,
-  updated_at          timestamptz,
-  deleted_at          timestamptz,        -- non-null = deleted upstream
-  -- Local bookkeeping (not from the API):
-  imported_at         timestamptz not null default now()
-);
-
--- Optional: if you download photos, record where YOU stored them. Never store
--- the API's signed photo_url as the source of truth - it expires in ~1 hour.
-create table if not exists catch_report_photos (
-  catch_report_id uuid references catch_reports(id) on delete cascade,
-  kind            text check (kind in ('body','head')),
-  storage_path    text,                   -- path in YOUR storage
-  downloaded_at   timestamptz not null default now(),
-  primary key (catch_report_id, kind)
-);
-
 -- Single-row cursor store for incremental sync.
 create table if not exists sync_state (
   key   text primary key,
@@ -70,24 +43,44 @@ create table if not exists sync_state (
 );
 ```
 
-A quick local/sample variant uses SQLite with the same columns (see the SDK's
-own sample, which mirrors into a local `.db` file).
+This guide differs from the canonical schema in two optional ways, if you prefer:
+
+- Add a local `imported_at timestamptz not null default now()` bookkeeping
+  column to `catch_reports`.
+- Model photos as a **separate table** instead of the inline `photo_path` /
+  `head_photo_path` columns. Either way, never store the API's signed
+  `photo_url` — it expires in ~1 hour.
+
+```sql
+-- Optional alternative to inline photo path columns.
+create table if not exists catch_report_photos (
+  catch_report_id uuid references catch_reports(id) on delete cascade,
+  kind            text check (kind in ('body','head')),
+  storage_path    text,                   -- path in YOUR storage
+  downloaded_at   timestamptz not null default now(),
+  primary key (catch_report_id, kind)
+);
+```
 
 ---
 
 ## 2. Upsert and delete
 
+The column lists below must match your schema; if they ever drift, reconcile
+against [TCA_Export_Reference.md](TCA_Export_Reference.md#the-exported-table--every-field).
 For each row in a page:
 
 ```sql
 -- Live row (deleted_at is null): upsert by id.
 insert into catch_reports (
-  id, report_id, angler_member_id, species, length_inches, river,
-  latitude, longitude, sex, lifecycle_stage, floy_id, pit_id,
+  id, report_id, angler_member_id, species, length_inches, fork_length_inches,
+  girth_inches, river, latitude, longitude, sex, lifecycle_stage, marks,
+  hatchery, floy_id, pit_id, scale_envelope_id, fin_envelope_id,
   caught_at, uploaded_at, updated_at, deleted_at
 ) values (
-  :id, :report_id, :angler_member_id, :species, :length_inches, :river,
-  :latitude, :longitude, :sex, :lifecycle_stage, :floy_id, :pit_id,
+  :id, :report_id, :angler_member_id, :species, :length_inches, :fork_length_inches,
+  :girth_inches, :river, :latitude, :longitude, :sex, :lifecycle_stage, :marks,
+  :hatchery, :floy_id, :pit_id, :scale_envelope_id, :fin_envelope_id,
   :caught_at, :uploaded_at, :updated_at, :deleted_at
 )
 on conflict (id) do update set
@@ -95,13 +88,19 @@ on conflict (id) do update set
   angler_member_id = excluded.angler_member_id,
   species          = excluded.species,
   length_inches    = excluded.length_inches,
+  fork_length_inches = excluded.fork_length_inches,
+  girth_inches     = excluded.girth_inches,
   river            = excluded.river,
   latitude         = excluded.latitude,
   longitude        = excluded.longitude,
   sex              = excluded.sex,
   lifecycle_stage  = excluded.lifecycle_stage,
+  marks            = excluded.marks,
+  hatchery         = excluded.hatchery,
   floy_id          = excluded.floy_id,
   pit_id           = excluded.pit_id,
+  scale_envelope_id = excluded.scale_envelope_id,
+  fin_envelope_id  = excluded.fin_envelope_id,
   caught_at        = excluded.caught_at,
   uploaded_at      = excluded.uploaded_at,
   updated_at       = excluded.updated_at,
@@ -163,7 +162,7 @@ checked in alongside). Adjust the two bracketed lines for the client's stack.
 >
 > **Deliverables:**
 > 1. A **schema migration** creating: a `catch_reports` mirror table whose columns
->    match the 16 data fields of the export row (`id` is the primary key), a
+>    match the 22 data fields of the export row (`id` is the primary key), a
 >    `sync_state` key/value table for the cursor, and - only if photos are in scope -
 >    a `catch_report_photos` table recording locally-stored image paths. Do NOT add
 >    columns for the signed photo URLs; they are ephemeral.

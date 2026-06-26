@@ -114,6 +114,40 @@ def test_show_needs_no_api_key(tmp_path):
     assert main(["show"], env={"MT_EXPORT_DB_PATH": db}) == 0
 
 
+def test_probe_validates_and_returns_zero(tmp_path):
+    from madthinker_export.probe import CANONICAL
+
+    env = {"MT_EXPORT_API_URL": CANONICAL, "MT_EXPORT_API_KEY": "k"}
+    code = main(["probe"], env=env, session=FakeSession([one_page([])]))
+    assert code == 0
+
+
+def test_probe_wrong_url_returns_runtime_error(capsys):
+    env = {
+        "MT_EXPORT_API_URL": "https://wrong.supabase.co/functions/v1/catch-reports-export",
+        "MT_EXPORT_API_KEY": "k",
+    }
+    code = main(["probe"], env=env, session=FakeSession([FakeResponse(404, {"message": "no"})]))
+    assert code == 1
+    assert "STATIC CHECK: FAIL" in capsys.readouterr().out
+
+
+def test_probe_needs_no_api_key(capsys):
+    from madthinker_export.probe import CANONICAL
+
+    env = {"MT_EXPORT_API_URL": CANONICAL}  # no key
+    session = FakeSession([FakeResponse(401, {"error": "Unauthorized"})])
+    code = main(["probe"], env=env, session=session)
+    assert code == 1  # not fully validated, but did not crash on the missing key
+    assert "URL RIGHT" in capsys.readouterr().out
+
+
+def test_probe_missing_url_is_config_error(capsys):
+    code = main(["probe"], env={}, session=FakeSession([]))
+    assert code == 2
+    assert "MT_EXPORT_API_URL" in capsys.readouterr().out
+
+
 def test_sync_downloads_photos_when_dir_configured(tmp_path, capsys):
     photo_url = "https://signed.example/r1.jpg?t=1"
     photo_dir = tmp_path / "pics"

@@ -9,7 +9,9 @@ Three are optional:
 
 * ``MT_EXPORT_DB_PATH``  — local SQLite mirror path (default ``catch_reports.db``).
 * ``MT_EXPORT_LIMIT``    — page size, 1..5000 (default 1000).
-* ``MT_EXPORT_PHOTO_DIR``— folder for downloaded photos. Unset means data only.
+* ``MT_EXPORT_PHOTO_DIR``— folder for downloaded photos. Photos are opt-out:
+  unset downloads to ``photos``; set it to a path to choose the folder, or to an
+  empty string to skip photo download entirely.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from dataclasses import dataclass
 from .client import DEFAULT_LIMIT, MAX_LIMIT
 
 DEFAULT_DB_PATH = "catch_reports.db"
+DEFAULT_PHOTO_DIR = "photos"
 
 
 class ConfigError(Exception):
@@ -69,7 +72,13 @@ class Config:
                     f"MT_EXPORT_LIMIT must be between 1 and {MAX_LIMIT}, got {limit}"
                 )
 
-        photo_dir = env.get("MT_EXPORT_PHOTO_DIR") or None
+        # Photos are opt-out: unset downloads to DEFAULT_PHOTO_DIR; an explicit
+        # empty string disables download; any other value is the target folder.
+        raw_photo_dir = env.get("MT_EXPORT_PHOTO_DIR")
+        if raw_photo_dir is None:
+            photo_dir = DEFAULT_PHOTO_DIR
+        else:
+            photo_dir = raw_photo_dir or None
 
         return cls(
             api_url=api_url,

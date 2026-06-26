@@ -81,13 +81,19 @@ every call after that.
       "angler_member_id": "mtsip6385a",
       "species": "Steelhead",
       "length_inches": 24,
+      "fork_length_inches": 22.5,
+      "girth_inches": 12,
       "river": "Smith River",
       "latitude": 45.5231,
       "longitude": -122.6765,
       "sex": "male",
       "lifecycle_stage": "adult",
+      "marks": false,
+      "hatchery": false,
       "floy_id": null,
       "pit_id": null,
+      "scale_envelope_id": null,
+      "fin_envelope_id": null,
       "caught_at": "2026-05-18T14:32:00Z",
       "uploaded_at": "2026-05-18T14:45:12Z",
       "updated_at": "2026-05-18T14:45:12Z",
@@ -112,29 +118,15 @@ every call after that.
 | `has_more`       | boolean | `true` when more rows are waiting. It is `true` exactly when `returned_count == limit`.        |
 | `returned_count` | integer | Number of rows in `rows`.                                                                       |
 
-### Row fields (19)
+### Row fields (25)
 
-| Field                  | Type             | Notes                                                                                  |
-| ---------------------- | ---------------- | -------------------------------------------------------------------------------------- |
-| `id`                   | string (uuid)    | MadThinker's unique id for the catch report. **Use as your primary key.**               |
-| `report_id`            | string (uuid)    | Client-supplied report id (idempotency key on upload).                                  |
-| `angler_member_id`     | string \| null   | The angler's member number.                                                             |
-| `species`              | string           | e.g. `Steelhead`, `Atlantic Salmon`.                                                    |
-| `length_inches`        | number \| null   |                                                                                        |
-| `river`                | string \| null   |                                                                                        |
-| `latitude`             | number \| null   |                                                                                        |
-| `longitude`            | number \| null   |                                                                                        |
-| `sex`                  | string \| null   |                                                                                        |
-| `lifecycle_stage`      | string \| null   |                                                                                        |
-| `floy_id`              | string \| null   | Physical Floy tag id.                                                                   |
-| `pit_id`               | string \| null   | Physical PIT tag id.                                                                    |
-| `caught_at`            | string (ISO8601) | When the fish was caught.                                                               |
-| `uploaded_at`          | string (ISO8601) | When the report reached MadThinker.                                                     |
-| `updated_at`           | string (ISO8601) | Last change on MadThinker's side. Drives the cursor ordering.                           |
-| `deleted_at`           | string \| null   | If set, the row was deleted upstream - delete/soft-delete it on your side. See below.   |
-| `photo_url`            | string \| null   | **Time-limited** signed download URL for the catch photo. `null` if no photo.           |
-| `head_photo_url`       | string \| null   | **Time-limited** signed download URL for the head photo. `null` if none.                |
-| `photo_urls_expire_at` | string \| null   | When both photo URLs stop working (about 1 hour after the response). `null` if no photo.|
+The complete field list — names, types, nullability, and meaning (including
+`fork_length_inches`, `girth_inches`, `marks`, `hatchery`, `scale_envelope_id`,
+and `fin_envelope_id`) — lives in one place, the source of truth:
+
+➡️ **[TCA_Export_Reference.md — The exported table](TCA_Export_Reference.md#the-exported-table--every-field).**
+
+The sample response above shows the shape; that page defines every field.
 
 ---
 

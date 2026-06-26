@@ -1,5 +1,7 @@
 """Tests for the SQLite local mirror store."""
 
+import sqlite3
+
 from madthinker_export.store import Store
 
 
@@ -116,6 +118,61 @@ def test_reupsert_refreshes_photo_paths(tmp_path):
     store.upsert_row(_row("r1"), photo_path="/photos/new.jpg")
     assert store.get_row("r1")["photo_path"] == "/photos/new.jpg"
     assert store.count_rows() == 1
+
+
+def test_upsert_records_research_fields(tmp_path):
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(
+        _row(
+            "r1",
+            fork_length_inches=29.0,
+            girth_inches=14.5,
+            marks=True,
+            hatchery=False,
+            scale_envelope_id="SCALE-123",
+            fin_envelope_id="FIN-456",
+        )
+    )
+    got = store.get_row("r1")
+    assert got["fork_length_inches"] == 29.0
+    assert got["girth_inches"] == 14.5
+    assert got["marks"] == 1  # SQLite stores booleans as 1/0
+    assert got["hatchery"] == 0
+    assert got["scale_envelope_id"] == "SCALE-123"
+    assert got["fin_envelope_id"] == "FIN-456"
+
+
+def test_upsert_missing_research_fields_are_null(tmp_path):
+    # Forward-compat: a row that omits these keys stores NULL, so the SDK can
+    # carry the columns before the endpoint emits them.
+    store = Store(tmp_path / "mirror.db")
+    store.upsert_row(_row("r1"))
+    got = store.get_row("r1")
+    for field in (
+        "fork_length_inches",
+        "girth_inches",
+        "marks",
+        "hatchery",
+        "scale_envelope_id",
+        "fin_envelope_id",
+    ):
+        assert got[field] is None
+
+
+def test_existing_mirror_gains_new_columns(tmp_path):
+    # A mirror created before the research columns existed must gain them on
+    # open, so the next sync's upsert doesn't fail with "no such column".
+    db = tmp_path / "mirror.db"
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE catch_reports (id TEXT PRIMARY KEY, species)")
+    conn.commit()
+    conn.close()
+
+    store = Store(db)
+    store.upsert_row(_row("r1", girth_inches=12.0, scale_envelope_id="S-1"))
+    got = store.get_row("r1")
+    assert got["girth_inches"] == 12.0
+    assert got["scale_envelope_id"] == "S-1"
 
 
 def test_recent_rows_most_recent_first_and_capped(tmp_path):

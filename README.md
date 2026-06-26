@@ -73,15 +73,19 @@ the scripts wrap.
 
 Deeper references live in [`docs/`](docs/):
 
-- [**Catch Reports Export API**](docs/TCA_Catch_Reports_Export_API.md) —
-  consumer-facing overview of the pull model: endpoint, query parameters, and
-  response shape. Start here for the big picture.
+- [**Export Reference**](docs/TCA_Export_Reference.md) — **start here.** How the
+  API works in one page, the complete exported-table schema (every field,
+  including girth/scale/fin), and paste-ready Postgres + SQLite DDL. The single
+  source of truth for the field list.
 - [**SDK / API Reference**](docs/TCA_Export_SDK_API_Reference.md) — the stable,
   language-agnostic endpoint contract this sample implements (headers,
   parameters, errors, paging).
+- [**Catch Reports Export API**](docs/TCA_Catch_Reports_Export_API.md) —
+  a narrated walkthrough of the pull model with a complete, runnable Python
+  example.
 - [**Client Database Import Guide**](docs/TCA_Export_Client_DB_Import_Guide.md) —
-  how to mirror the feed into your own Postgres/Supabase database, including a
-  target schema and the import-job loop.
+  how to mirror the feed into your own Postgres/Supabase database, including the
+  cursor table and the import-job loop.
 
 ## How it works (pull model)
 
@@ -155,7 +159,7 @@ Optional:
 | ------------------- | ------------------- | -------------------------------- |
 | `MT_EXPORT_DB_PATH`   | `catch_reports.db`  | Path to the local SQLite mirror. |
 | `MT_EXPORT_LIMIT`     | `1000`              | Page size (1–5000).              |
-| `MT_EXPORT_PHOTO_DIR` | _(unset)_           | Folder for downloaded photos. Unset → data only; set → download photos during sync. See [Photos](#photos). |
+| `MT_EXPORT_PHOTO_DIR` | `photos`            | Folder for downloaded photos. Photos download by default; set a path to change the folder, or an empty value to skip them. See [Photos](#photos). |
 
 ```bash
 export MT_EXPORT_API_URL="https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export"
@@ -182,18 +186,50 @@ python -m madthinker_export show
 Exit codes: `0` success, `1` runtime error (auth, bad request, or exhausted
 transient retries), `2` misconfiguration.
 
+## Troubleshooting the connection
+
+If a call fails — especially with a **404 Not Found** — the cause is almost
+always a wrong `MT_EXPORT_API_URL`, not the key. Run the probe to find out for
+certain:
+
+```bash
+python -m madthinker_export probe
+```
+
+It runs two checks against the configured URL:
+
+1. **Static** — compares your URL to the canonical endpoint and points out any
+   host/path mismatch. Needs no key and no network.
+2. **Live** — one request, with the status code localising the fault:
+
+   | Result                | Meaning                                             |
+   | --------------------- | --------------------------------------------------- |
+   | `URL WRONG` (404)     | No function at this URL — fix `MT_EXPORT_API_URL`.   |
+   | `URL RIGHT, KEY WRONG` (401) | Endpoint reached; key missing or invalid.    |
+   | `URL RIGHT` (400)     | Endpoint reached; check the request parameters.     |
+   | `FULLY VALIDATED` (200) | URL and key both good, response contract matches. |
+
+The probe works even without `MT_EXPORT_API_KEY` set: a correct URL returns
+`401` and a wrong URL returns `404`, so the result still tells you whether the
+URL is right. Exit codes match the table — `0` only when fully validated.
+
 ## Photos
 
 Each row may carry two **signed** photo URLs (`photo_url`, `head_photo_url`)
-that expire **one hour** after the response. To also mirror the images, point
-`MT_EXPORT_PHOTO_DIR` at a folder:
+that expire **one hour** after the response. Photos are mirrored **by default**:
+a plain `sync` downloads them into a `photos` folder. Point
+`MT_EXPORT_PHOTO_DIR` at a different folder to change where they land, or set it
+to an empty value to skip photo download entirely:
 
 ```bash
-export MT_EXPORT_PHOTO_DIR="./photos"
+export MT_EXPORT_PHOTO_DIR="./photos"   # default; set another path to relocate
+python -m madthinker_export sync
+
+export MT_EXPORT_PHOTO_DIR=""            # opt out: mirror row data only
 python -m madthinker_export sync
 ```
 
-The same `sync` run then downloads each live row's photos **in the same
+The `sync` run downloads each live row's photos **in the same
 iteration that produced the URLs**, before they expire, writing
 `<id>.jpg` and `<id>.head.jpg` (extension derived from the URL). The mirror
 records, per row:
@@ -208,7 +244,7 @@ misleading; the local paths are the durable reference.
 Download is **best-effort**: a single failed image fetch (e.g. an already-expired
 URL) prints a warning and the sync continues. Because a row only reappears in the
 feed when it changes, an image missed this way is re-fetched the next time that
-row is exported. Leave `MT_EXPORT_PHOTO_DIR` unset for data-only syncs.
+row is exported. Set `MT_EXPORT_PHOTO_DIR=""` for data-only syncs.
 
 ## Errors and retries
 

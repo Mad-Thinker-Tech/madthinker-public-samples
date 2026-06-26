@@ -18,6 +18,7 @@ from collections.abc import Callable
 
 from .client import ExportClient, ExportError
 from .config import DEFAULT_DB_PATH, Config, ConfigError
+from .probe import probe
 from .store import Store
 from .sync import sync
 
@@ -37,6 +38,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("sync", help="Pull new/changed rows since the last run.")
     sub.add_parser("show", help="Print the catch reports in the local mirror.")
+    sub.add_parser("probe", help="Check that MT_EXPORT_API_URL is the correct, live endpoint.")
     return parser
 
 
@@ -52,6 +54,11 @@ def main(
     # `show` only reads the local mirror, so it needs no API URL or key.
     if args.command == "show":
         return _run_show(env.get("MT_EXPORT_DB_PATH") or DEFAULT_DB_PATH)
+
+    # `probe` diagnoses the endpoint URL; it reads the env directly and
+    # tolerates a missing key (a keyless call still distinguishes 404 from 401).
+    if args.command == "probe":
+        return _run_probe(env, session=session)
 
     try:
         config = Config.from_env(env)
@@ -91,6 +98,20 @@ def _run_sync(config: Config, *, session, sleep: Callable[[float], None]) -> int
         f"Mirror at {config.db_path}."
     )
     return EXIT_OK
+
+
+def _run_probe(env: dict, *, session) -> int:
+    url = env.get("MT_EXPORT_API_URL")
+    if not url:
+        print(
+            "Configuration error: MT_EXPORT_API_URL is not set. "
+            "Set it (or pass it via config.env) to the export endpoint to probe."
+        )
+        return EXIT_CONFIG_ERROR
+
+    result = probe(url, env.get("MT_EXPORT_API_KEY"), session=session)
+    print(result.verdict)
+    return EXIT_OK if result.ok else EXIT_RUNTIME_ERROR
 
 
 # Columns shown by `show`: (row key, header, width).
