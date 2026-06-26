@@ -114,12 +114,16 @@ def _run_probe(env: dict, *, session) -> int:
     return EXIT_OK if result.ok else EXIT_RUNTIME_ERROR
 
 
-# Columns shown by `show`: (row key, header, width).
+# Columns shown by `show`: (row key, header, width). Envelope barcodes are
+# truncated to the column width; query the DB directly for full values.
 _SHOW_COLUMNS = (
     ("caught_at", "CAUGHT AT", 20),
     ("species", "SPECIES", 16),
     ("length_inches", "LENGTH", 7),
-    ("river", "RIVER", 18),
+    ("girth_inches", "GIRTH", 7),
+    ("river", "RIVER", 16),
+    ("scale_envelope_id", "SCALE ID", 14),
+    ("fin_envelope_id", "FIN ID", 14),
     ("photo", "PHOTO", 5),
 )
 
