@@ -24,13 +24,19 @@ ROW_FIELDS = (
     "angler_member_id",
     "species",
     "length_inches",
+    "fork_length_inches",
+    "girth_inches",
     "river",
     "latitude",
     "longitude",
     "sex",
     "lifecycle_stage",
+    "marks",
+    "hatchery",
     "floy_id",
     "pit_id",
+    "scale_envelope_id",
+    "fin_envelope_id",
     "caught_at",
     "uploaded_at",
     "updated_at",
@@ -74,7 +80,25 @@ class Store:
             );
             """
         )
+        self._add_missing_columns()
         self._conn.commit()
+
+    def _add_missing_columns(self) -> None:
+        """Add any ``STORED_FIELDS`` absent from an older mirror.
+
+        ``CREATE TABLE IF NOT EXISTS`` leaves a pre-existing table untouched, so
+        a mirror created before a field was added would lack its column and the
+        next upsert would fail. Reconcile by appending only what is missing.
+        """
+        existing = {
+            row["name"]
+            for row in self._conn.execute("PRAGMA table_info(catch_reports)")
+        }
+        for name in STORED_FIELDS:
+            if name not in existing:
+                self._conn.execute(
+                    f"ALTER TABLE catch_reports ADD COLUMN {name}"
+                )
 
     # -- cursor state -----------------------------------------------------
     def get_cursor(self) -> str | None:

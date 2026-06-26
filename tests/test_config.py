@@ -58,8 +58,9 @@ def test_out_of_range_limit_raises():
         Config.from_env(base_env(MT_EXPORT_LIMIT="9999"))
 
 
-def test_default_photo_dir_is_none():
-    assert Config.from_env(base_env()).photo_dir is None
+def test_default_photo_dir_is_photos():
+    # Photos are opt-out: an unset MT_EXPORT_PHOTO_DIR downloads to ./photos.
+    assert Config.from_env(base_env()).photo_dir == "photos"
 
 
 def test_custom_photo_dir():
@@ -67,5 +68,6 @@ def test_custom_photo_dir():
     assert cfg.photo_dir == "/tmp/pics"
 
 
-def test_blank_photo_dir_is_none():
+def test_blank_photo_dir_disables_photos():
+    # An explicitly blank value opts out of photo download entirely.
     assert Config.from_env(base_env(MT_EXPORT_PHOTO_DIR="")).photo_dir is None

@@ -60,13 +60,19 @@ You will pass `since` only on the very first call ever. After that, you always p
       "angler_member_id": "mtsip6385a",
       "species": "Steelhead",
       "length_inches": 24,
+      "fork_length_inches": 22.5,
+      "girth_inches": 12,
       "river": "Smith River",
       "latitude": 45.5231,
       "longitude": -122.6765,
       "sex": "male",
       "lifecycle_stage": "adult",
+      "marks": false,
+      "hatchery": false,
       "floy_id": null,
       "pit_id": null,
+      "scale_envelope_id": null,
+      "fin_envelope_id": null,
       "caught_at": "2026-05-18T14:32:00Z",
       "uploaded_at": "2026-05-18T14:45:12Z",
       "updated_at": "2026-05-18T14:45:12Z",
@@ -91,6 +97,9 @@ You will pass `since` only on the very first call ever. After that, you always p
 - **`next_cursor`**: Pass this back on your next call. Always.
 - **`photo_url`** / **`head_photo_url`**: Time-limited signed download URLs for the catch photo and the head photo. Either may be `null` if no photo was uploaded. **These expire 1 hour after the response is generated** — download the image bytes in the same loop iteration in which you pull the row. The URL is signed for access only; the image itself is unmodified.
 - **`photo_urls_expire_at`**: ISO 8601 timestamp at which both photo URLs above stop working. `null` when the row has no photos. After expiry, re-pull the row (same `since`/`cursor`) to get fresh URLs.
+- **`fork_length_inches`** / **`girth_inches`**: Manually entered fork length and final confirmed girth. Either may be `null` when not measured.
+- **`marks`** / **`hatchery`**: Researcher booleans. Never `null` — they default to `false`.
+- **`scale_envelope_id`** / **`fin_envelope_id`**: Scanned barcodes of the scale and fin sample envelopes. `null` when no sample was taken.
 
 ---
 
@@ -132,13 +141,19 @@ db.execute("""
         angler_member_id TEXT,
         species TEXT,
         length_inches INTEGER,
+        fork_length_inches REAL,
+        girth_inches REAL,
         river TEXT,
         latitude REAL,
         longitude REAL,
         sex TEXT,
         lifecycle_stage TEXT,
+        marks INTEGER,
+        hatchery INTEGER,
         floy_id TEXT,
         pit_id TEXT,
+        scale_envelope_id TEXT,
+        fin_envelope_id TEXT,
         caught_at TEXT,
         uploaded_at TEXT,
         updated_at TEXT,
@@ -170,20 +185,28 @@ def apply_row(row):
         db.execute("""
             INSERT INTO catch_reports VALUES (
                 :id, :report_id, :angler_member_id, :species, :length_inches,
+                :fork_length_inches, :girth_inches,
                 :river, :latitude, :longitude, :sex, :lifecycle_stage,
-                :floy_id, :pit_id, :caught_at,
+                :marks, :hatchery,
+                :floy_id, :pit_id, :scale_envelope_id, :fin_envelope_id, :caught_at,
                 :uploaded_at, :updated_at, :deleted_at
             )
             ON CONFLICT(id) DO UPDATE SET
                 species = excluded.species,
                 length_inches = excluded.length_inches,
+                fork_length_inches = excluded.fork_length_inches,
+                girth_inches = excluded.girth_inches,
                 river = excluded.river,
                 latitude = excluded.latitude,
                 longitude = excluded.longitude,
                 sex = excluded.sex,
                 lifecycle_stage = excluded.lifecycle_stage,
+                marks = excluded.marks,
+                hatchery = excluded.hatchery,
                 floy_id = excluded.floy_id,
                 pit_id = excluded.pit_id,
+                scale_envelope_id = excluded.scale_envelope_id,
+                fin_envelope_id = excluded.fin_envelope_id,
                 updated_at = excluded.updated_at,
                 deleted_at = excluded.deleted_at
         """, row)

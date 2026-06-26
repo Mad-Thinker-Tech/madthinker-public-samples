@@ -38,13 +38,19 @@ create table if not exists catch_reports (
   angler_member_id    text,
   species             text,
   length_inches       numeric,
+  fork_length_inches  numeric,            -- manually entered fork length
+  girth_inches        double precision,   -- final confirmed girth
   river               text,
   latitude            double precision,
   longitude           double precision,
   sex                 text,
   lifecycle_stage     text,
+  marks               boolean,            -- researcher flag (never null upstream)
+  hatchery            boolean,            -- researcher flag (never null upstream)
   floy_id             text,
   pit_id              text,
+  scale_envelope_id   text,               -- scale sample envelope barcode
+  fin_envelope_id     text,               -- fin sample envelope barcode
   caught_at           timestamptz,
   uploaded_at         timestamptz,
   updated_at          timestamptz,
@@ -82,12 +88,14 @@ For each row in a page:
 ```sql
 -- Live row (deleted_at is null): upsert by id.
 insert into catch_reports (
-  id, report_id, angler_member_id, species, length_inches, river,
-  latitude, longitude, sex, lifecycle_stage, floy_id, pit_id,
+  id, report_id, angler_member_id, species, length_inches, fork_length_inches,
+  girth_inches, river, latitude, longitude, sex, lifecycle_stage, marks,
+  hatchery, floy_id, pit_id, scale_envelope_id, fin_envelope_id,
   caught_at, uploaded_at, updated_at, deleted_at
 ) values (
-  :id, :report_id, :angler_member_id, :species, :length_inches, :river,
-  :latitude, :longitude, :sex, :lifecycle_stage, :floy_id, :pit_id,
+  :id, :report_id, :angler_member_id, :species, :length_inches, :fork_length_inches,
+  :girth_inches, :river, :latitude, :longitude, :sex, :lifecycle_stage, :marks,
+  :hatchery, :floy_id, :pit_id, :scale_envelope_id, :fin_envelope_id,
   :caught_at, :uploaded_at, :updated_at, :deleted_at
 )
 on conflict (id) do update set
@@ -95,13 +103,19 @@ on conflict (id) do update set
   angler_member_id = excluded.angler_member_id,
   species          = excluded.species,
   length_inches    = excluded.length_inches,
+  fork_length_inches = excluded.fork_length_inches,
+  girth_inches     = excluded.girth_inches,
   river            = excluded.river,
   latitude         = excluded.latitude,
   longitude        = excluded.longitude,
   sex              = excluded.sex,
   lifecycle_stage  = excluded.lifecycle_stage,
+  marks            = excluded.marks,
+  hatchery         = excluded.hatchery,
   floy_id          = excluded.floy_id,
   pit_id           = excluded.pit_id,
+  scale_envelope_id = excluded.scale_envelope_id,
+  fin_envelope_id  = excluded.fin_envelope_id,
   caught_at        = excluded.caught_at,
   uploaded_at      = excluded.uploaded_at,
   updated_at       = excluded.updated_at,
@@ -163,7 +177,7 @@ checked in alongside). Adjust the two bracketed lines for the client's stack.
 >
 > **Deliverables:**
 > 1. A **schema migration** creating: a `catch_reports` mirror table whose columns
->    match the 16 data fields of the export row (`id` is the primary key), a
+>    match the 22 data fields of the export row (`id` is the primary key), a
 >    `sync_state` key/value table for the cursor, and - only if photos are in scope -
 >    a `catch_report_photos` table recording locally-stored image paths. Do NOT add
 >    columns for the signed photo URLs; they are ephemeral.

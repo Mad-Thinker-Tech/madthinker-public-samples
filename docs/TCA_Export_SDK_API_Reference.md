@@ -81,13 +81,19 @@ every call after that.
       "angler_member_id": "mtsip6385a",
       "species": "Steelhead",
       "length_inches": 24,
+      "fork_length_inches": 22.5,
+      "girth_inches": 12,
       "river": "Smith River",
       "latitude": 45.5231,
       "longitude": -122.6765,
       "sex": "male",
       "lifecycle_stage": "adult",
+      "marks": false,
+      "hatchery": false,
       "floy_id": null,
       "pit_id": null,
+      "scale_envelope_id": null,
+      "fin_envelope_id": null,
       "caught_at": "2026-05-18T14:32:00Z",
       "uploaded_at": "2026-05-18T14:45:12Z",
       "updated_at": "2026-05-18T14:45:12Z",
@@ -112,7 +118,7 @@ every call after that.
 | `has_more`       | boolean | `true` when more rows are waiting. It is `true` exactly when `returned_count == limit`.        |
 | `returned_count` | integer | Number of rows in `rows`.                                                                       |
 
-### Row fields (19)
+### Row fields (25)
 
 | Field                  | Type             | Notes                                                                                  |
 | ---------------------- | ---------------- | -------------------------------------------------------------------------------------- |
@@ -121,13 +127,19 @@ every call after that.
 | `angler_member_id`     | string \| null   | The angler's member number.                                                             |
 | `species`              | string           | e.g. `Steelhead`, `Atlantic Salmon`.                                                    |
 | `length_inches`        | number \| null   |                                                                                        |
+| `fork_length_inches`   | number \| null   | Manually entered fork length. `null` = not measured.                                    |
+| `girth_inches`         | number \| null   | Final confirmed girth.                                                                  |
 | `river`                | string \| null   |                                                                                        |
 | `latitude`             | number \| null   |                                                                                        |
 | `longitude`            | number \| null   |                                                                                        |
 | `sex`                  | string \| null   |                                                                                        |
 | `lifecycle_stage`      | string \| null   |                                                                                        |
+| `marks`                | boolean          | Researcher flag; never null (defaults `false`).                                         |
+| `hatchery`             | boolean          | Researcher flag; never null (defaults `false`).                                         |
 | `floy_id`              | string \| null   | Physical Floy tag id.                                                                   |
 | `pit_id`               | string \| null   | Physical PIT tag id.                                                                    |
+| `scale_envelope_id`    | string \| null   | Scanned barcode of the scale sample envelope.                                           |
+| `fin_envelope_id`      | string \| null   | Scanned barcode of the fin sample envelope.                                             |
 | `caught_at`            | string (ISO8601) | When the fish was caught.                                                               |
 | `uploaded_at`          | string (ISO8601) | When the report reached MadThinker.                                                     |
 | `updated_at`           | string (ISO8601) | Last change on MadThinker's side. Drives the cursor ordering.                           |

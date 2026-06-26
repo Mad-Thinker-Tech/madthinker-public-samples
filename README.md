@@ -155,7 +155,7 @@ Optional:
 | ------------------- | ------------------- | -------------------------------- |
 | `MT_EXPORT_DB_PATH`   | `catch_reports.db`  | Path to the local SQLite mirror. |
 | `MT_EXPORT_LIMIT`     | `1000`              | Page size (1–5000).              |
-| `MT_EXPORT_PHOTO_DIR` | _(unset)_           | Folder for downloaded photos. Unset → data only; set → download photos during sync. See [Photos](#photos). |
+| `MT_EXPORT_PHOTO_DIR` | `photos`            | Folder for downloaded photos. Photos download by default; set a path to change the folder, or an empty value to skip them. See [Photos](#photos). |
 
 ```bash
 export MT_EXPORT_API_URL="https://koxeklkffxewmkasocvk.supabase.co/functions/v1/tca-catch-reports-export"
@@ -212,15 +212,20 @@ URL is right. Exit codes match the table — `0` only when fully validated.
 ## Photos
 
 Each row may carry two **signed** photo URLs (`photo_url`, `head_photo_url`)
-that expire **one hour** after the response. To also mirror the images, point
-`MT_EXPORT_PHOTO_DIR` at a folder:
+that expire **one hour** after the response. Photos are mirrored **by default**:
+a plain `sync` downloads them into a `photos` folder. Point
+`MT_EXPORT_PHOTO_DIR` at a different folder to change where they land, or set it
+to an empty value to skip photo download entirely:
 
 ```bash
-export MT_EXPORT_PHOTO_DIR="./photos"
+export MT_EXPORT_PHOTO_DIR="./photos"   # default; set another path to relocate
+python -m madthinker_export sync
+
+export MT_EXPORT_PHOTO_DIR=""            # opt out: mirror row data only
 python -m madthinker_export sync
 ```
 
-The same `sync` run then downloads each live row's photos **in the same
+The `sync` run downloads each live row's photos **in the same
 iteration that produced the URLs**, before they expire, writing
 `<id>.jpg` and `<id>.head.jpg` (extension derived from the URL). The mirror
 records, per row:
@@ -235,7 +240,7 @@ misleading; the local paths are the durable reference.
 Download is **best-effort**: a single failed image fetch (e.g. an already-expired
 URL) prints a warning and the sync continues. Because a row only reappears in the
 feed when it changes, an image missed this way is re-fetched the next time that
-row is exported. Leave `MT_EXPORT_PHOTO_DIR` unset for data-only syncs.
+row is exported. Set `MT_EXPORT_PHOTO_DIR=""` for data-only syncs.
 
 ## Errors and retries
 
