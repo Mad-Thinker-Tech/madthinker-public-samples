@@ -89,6 +89,32 @@ def test_show_lists_reports(tmp_path, capsys):
     assert "1" in out  # the count
 
 
+def test_show_includes_research_fields(tmp_path, capsys):
+    db = str(tmp_path / "m.db")
+    store = Store(db)
+    store.upsert_row(
+        {
+            "id": "r1",
+            "species": "chinook",
+            "caught_at": "2024-05-01T12:00:00Z",
+            "girth_inches": 14.5,
+            "scale_envelope_id": "SCALE-9",
+            "fin_envelope_id": "FIN-7",
+            "deleted_at": None,
+        }
+    )
+    store.close()
+
+    code = main(["show"], env={"MT_EXPORT_DB_PATH": db})
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "GIRTH" in out and "SCALE" in out and "FIN" in out  # headers
+    assert "14.5" in out
+    assert "SCALE-9" in out
+    assert "FIN-7" in out
+
+
 def test_show_no_database_is_friendly_and_creates_nothing(tmp_path, capsys):
     db = str(tmp_path / "missing.db")
     code = main(["show"], env={"MT_EXPORT_DB_PATH": db})
